@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bergwacht Getränkekasse — Projekt-Übersicht</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0c1014;
+    --bg-card: #161c22;
+    --bg-card-hover: #1d242c;
+    --border: #2a333d;
+    --border-strong: #3a4452;
+    --text-bright: #f4f6f9;
+    --text-soft: #b8c2cc;
+    --text-mute: #6f7d8b;
+    --accent-green: #3d8a5f;          /* Tannengrün - primärer Akzent */
+    --accent-green-soft: #2d6647;
+    --accent-green-bright: #5fb37e;
+    --bwacht-red: #c8102e;             /* Bergwacht-Rot */
+    --bwacht-red-soft: #8e0a1f;
+    --member-tint: #4a9fd4;            /* Mitglieder-Ebene: kühles Blau */
+    --member-tint-soft: #2d6188;
+    --kasse-tint: #d4a14a;             /* Kassen-Ebene: warmes Gold-Ocker */
+    --kasse-tint-soft: #876329;
+    --shadow-card: 0 6px 24px rgba(0,0,0,0.4);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg-deep); color: var(--text-bright); font-family: 'Inter', sans-serif; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; padding: 32px 20px 80px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 48px 20px 56px; border-bottom: 1px solid var(--border); margin-bottom: 56px; }
+  .hero-eyebrow { font-family: 'Archivo', sans-serif; font-stretch: 110%; font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-green-bright); margin-bottom: 16px; }
+  .hero h1 { font-family: 'Archivo', sans-serif; font-stretch: 90%; font-weight: 800; font-size: clamp(36px, 6vw, 64px); line-height: 1.05; letter-spacing: -0.02em; color: var(--text-bright); margin-bottom: 16px; }
+  .hero p { font-size: 18px; color: var(--text-soft); max-width: 640px; margin: 0 auto; }
+  .hero .badge-row { margin-top: 32px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .badge { font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--bg-card); border: 1px solid var(--border); padding: 6px 12px; border-radius: 999px; color: var(--text-soft); }
+  .badge.live { color: var(--accent-green-bright); border-color: var(--accent-green-soft); }
+
+  /* Section */
+  section { margin-bottom: 72px; }
+  .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .section-num { font-family: 'Archivo', sans-serif; font-stretch: 75%; font-weight: 700; font-size: 14px; color: var(--accent-green-bright); letter-spacing: 0.1em; }
+  .section-head h2 { font-family: 'Archivo', sans-serif; font-stretch: 90%; font-weight: 700; font-size: 28px; letter-spacing: -0.01em; color: var(--text-bright); }
+  .section-intro { color: var(--text-soft); font-size: 16px; margin-bottom: 32px; max-width: 720px; }
+
+  /* === GELDFLUSS-DIAGRAMM === */
+  .flow-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow-card); }
+  .flow-legend { display: flex; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; font-size: 13px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 4px; }
+  .legend-dot.member { background: var(--member-tint); }
+  .legend-dot.kasse { background: var(--kasse-tint); }
+  .legend-dot.both { background: linear-gradient(135deg, var(--member-tint) 50%, var(--kasse-tint) 50%); }
+
+  .flow-svg-wrap { position: relative; width: 100%; overflow-x: auto; }
+  svg.flow { display: block; min-width: 720px; width: 100%; height: auto; }
+  .node { cursor: pointer; transition: filter 0.2s; }
+  .node:hover { filter: brightness(1.3); }
+  .node-bg { stroke-width: 1.5; }
+  .node-label { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.02em; fill: var(--text-bright); pointer-events: none; }
+  .node-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--text-soft); pointer-events: none; }
+  .edge { stroke-width: 2; fill: none; cursor: pointer; transition: stroke-width 0.2s; }
+  .edge:hover { stroke-width: 3.5; }
+  .edge-label { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; fill: var(--text-soft); pointer-events: none; }
+
+  /* Detail box below diagram */
+  .flow-detail { margin-top: 24px; padding: 20px; background: var(--bg-deep); border: 1px solid var(--border); border-radius: var(--radius-sm); min-height: 100px; }
+  .flow-detail.empty { display: flex; align-items: center; justify-content: center; color: var(--text-mute); font-style: italic; font-size: 14px; }
+  .flow-detail-title { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 16px; margin-bottom: 8px; color: var(--accent-green-bright); }
+  .flow-detail-text { color: var(--text-soft); font-size: 14px; line-height: 1.6; }
+  .flow-detail-text strong { color: var(--text-bright); font-weight: 600; }
+  .flow-detail-text code { font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+
+  /* === FUNKTIONEN-AKKORDEON === */
+  .accordion { display: grid; gap: 12px; }
+  .acc-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
+  .acc-item.open { border-color: var(--accent-green-soft); }
+  .acc-head { display: flex; align-items: center; gap: 16px; padding: 18px 22px; cursor: pointer; user-select: none; transition: background 0.15s; }
+  .acc-head:hover { background: var(--bg-card-hover); }
+  .acc-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+  .acc-icon.mitglied { background: rgba(74, 159, 212, 0.15); color: var(--member-tint); border: 1px solid var(--member-tint-soft); }
+  .acc-icon.verwalter { background: rgba(212, 161, 74, 0.15); color: var(--kasse-tint); border: 1px solid var(--kasse-tint-soft); }
+  .acc-icon.kasse { background: rgba(61, 138, 95, 0.15); color: var(--accent-green-bright); border: 1px solid var(--accent-green-soft); }
+  .acc-title { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 18px; flex: 1; }
+  .acc-sub { color: var(--text-mute); font-size: 13px; }
+  .acc-chevron { font-size: 18px; color: var(--text-mute); transition: transform 0.2s; }
+  .acc-item.open .acc-chevron { transform: rotate(180deg); color: var(--accent-green-bright); }
+  .acc-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+  .acc-item.open .acc-body { max-height: 800px; }
+  .acc-content { padding: 0 22px 22px 74px; }
+  .acc-content ul { list-style: none; }
+  .acc-content li { padding: 8px 0; padding-left: 24px; position: relative; color: var(--text-soft); font-size: 14px; }
+  .acc-content li::before { content: ""; position: absolute; left: 0; top: 16px; width: 12px; height: 1px; background: var(--accent-green-soft); }
+  .acc-content li strong { color: var(--text-bright); font-weight: 600; }
+
+  /* === IDEENPOOL === */
+  .pool-tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .pool-tab { padding: 12px 20px; font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.02em; color: var(--text-mute); border-bottom: 2px solid transparent; cursor: pointer; transition: color 0.15s, border-color 0.15s; background: transparent; border-left: none; border-right: none; border-top: none; }
+  .pool-tab:hover { color: var(--text-soft); }
+  .pool-tab.active { color: var(--accent-green-bright); border-bottom-color: var(--accent-green-bright); }
+  .pool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .idea-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; transition: transform 0.15s, border-color 0.15s; }
+  .idea-card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+  .idea-card .symbol { font-size: 28px; margin-bottom: 12px; display: block; }
+  .idea-card h3 { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 16px; margin-bottom: 8px; color: var(--text-bright); }
+  .idea-card p { font-size: 13px; color: var(--text-soft); line-height: 1.55; margin-bottom: 12px; }
+  .idea-effort { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.05em; padding: 3px 8px; border-radius: 999px; background: var(--bg-deep); color: var(--text-mute); border: 1px solid var(--border); text-transform: uppercase; }
+  .idea-effort.small { color: var(--accent-green-bright); border-color: var(--accent-green-soft); }
+  .idea-effort.medium { color: var(--kasse-tint); border-color: var(--kasse-tint-soft); }
+  .idea-effort.large { color: var(--bwacht-red); border-color: var(--bwacht-red-soft); }
+  .pool-panel { display: none; }
+  .pool-panel.active { display: block; }
+
+  /* === ROADMAP === */
+  .roadmap { display: grid; gap: 8px; }
+  .phase-row { display: grid; grid-template-columns: 60px 1fr auto; gap: 16px; align-items: center; padding: 14px 18px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .phase-row.done { border-left: 3px solid var(--accent-green-bright); }
+  .phase-row.current { border-left: 3px solid var(--kasse-tint); background: var(--bg-card-hover); }
+  .phase-id { font-family: 'Archivo', sans-serif; font-stretch: 90%; font-weight: 700; font-size: 13px; color: var(--text-mute); letter-spacing: 0.05em; }
+  .phase-row.done .phase-id { color: var(--accent-green-bright); }
+  .phase-row.current .phase-id { color: var(--kasse-tint); }
+  .phase-title { font-size: 14px; color: var(--text-soft); }
+  .phase-row.done .phase-title, .phase-row.current .phase-title { color: var(--text-bright); }
+  .phase-status { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.05em; }
+  .phase-row.done .phase-status { color: var(--accent-green-bright); }
+  .phase-row.current .phase-status { color: var(--kasse-tint); }
+
+  /* Footer */
+  footer { text-align: center; padding-top: 48px; border-top: 1px solid var(--border); color: var(--text-mute); font-size: 13px; }
+  footer code { font-family: 'JetBrains Mono', monospace; color: var(--text-soft); }
+
+  @media (max-width: 720px) {
+    body { padding: 16px 12px 60px; }
+    .hero { padding: 32px 12px 40px; margin-bottom: 40px; }
+    .flow-wrap { padding: 20px 16px; }
+    .acc-content { padding: 0 22px 22px 22px; }
+    .acc-head { padding: 14px 16px; }
+    .phase-row { grid-template-columns: 50px 1fr; gap: 10px; padding: 12px 14px; }
+    .phase-status { grid-column: 2; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-eyebrow">Bergwacht Zollernalb · Projekt-Übersicht</div>
+    <h1>Getränkekasse,<br>digital geführt.</h1>
+    <p>Eine Web-App, die unsere Strichliste ersetzt: Mitglieder buchen ihre Getränke per Klick, Aufladungen laufen über PayPal oder Bargeld, und die Kasse selbst behält den Überblick — getrennt nach Bar- und PayPal-Bestand.</p>
+    <div class="badge-row">
+      <span class="badge live">● Phase 1 abgeschlossen</span>
+      <span class="badge">ca. 30 Mitglieder</span>
+      <span class="badge">Mobile-First</span>
+      <span class="badge">Magic-Link-Login</span>
+    </div>
+  </header>
+
+  <!-- GELDFLUSS -->
+  <section>
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <h2>Wie das Geld fließt</h2>
+    </div>
+    <p class="section-intro">Es gibt zwei Buchungs-Ebenen, die parallel laufen und an den richtigen Stellen miteinander verknüpft sind: die persönlichen Guthaben der Mitglieder und das Geld der Kasse selbst. <strong style="color: var(--text-bright);">Tippe einen Knoten oder eine Linie an</strong>, um die Erklärung zu sehen.</p>
+
+    <div class="flow-wrap">
+      <div class="flow-legend">
+        <div class="legend-item"><div class="legend-dot member"></div><span>Mitglieder-Ebene (was wem gehört)</span></div>
+        <div class="legend-item"><div class="legend-dot kasse"></div><span>Kassen-Ebene (was die Kasse hat)</span></div>
+        <div class="legend-item"><div class="legend-dot both"></div><span>Gekoppelte Buchung (beide Ebenen)</span></div>
+      </div>
+
+      <div class="flow-svg-wrap">
+        <svg class="flow" viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a9fd4"/>
+            </marker>
+            <marker id="arrow-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#d4a14a"/>
+            </marker>
+            <marker id="arrow-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#c8102e"/>
+            </marker>
+          </defs>
+
+          <!-- BACKGROUND ZONES -->
+          <rect x="10" y="40" width="380" height="420" rx="12" fill="#4a9fd4" fill-opacity="0.04" stroke="#2d6188" stroke-opacity="0.4" stroke-dasharray="4 4"/>
+          <text x="20" y="62" font-family="Archivo" font-weight="700" font-size="11" fill="#4a9fd4" letter-spacing="0.1em">MITGLIEDER-EBENE</text>
+
+          <rect x="410" y="40" width="380" height="420" rx="12" fill="#d4a14a" fill-opacity="0.04" stroke="#876329" stroke-opacity="0.4" stroke-dasharray="4 4"/>
+          <text x="420" y="62" font-family="Archivo" font-weight="700" font-size="11" fill="#d4a14a" letter-spacing="0.1em">KASSEN-EBENE</text>
+
+          <!-- NODES MEMBER SIDE -->
+          <g class="node" data-detail="member">
+            <rect class="node-bg" x="100" y="100" width="200" height="60" rx="10" fill="#1d242c" stroke="#4a9fd4"/>
+            <text class="node-label" x="200" y="128" text-anchor="middle">Mitglieder-Konto</text>
+            <text class="node-sub" x="200" y="146" text-anchor="middle">Guthaben pro Person</text>
+          </g>
+
+          <g class="node" data-detail="buchung">
+            <rect class="node-bg" x="100" y="220" width="200" height="60" rx="10" fill="#1d242c" stroke="#4a9fd4"/>
+            <text class="node-label" x="200" y="248" text-anchor="middle">Getränk buchen</text>
+            <text class="node-sub" x="200" y="266" text-anchor="middle">Guthaben − Preis</text>
+          </g>
+
+          <g class="node" data-detail="aufladen-m">
+            <rect class="node-bg" x="100" y="340" width="200" height="60" rx="10" fill="#1d242c" stroke="#4a9fd4"/>
+            <text class="node-label" x="200" y="368" text-anchor="middle">Aufladung</text>
+            <text class="node-sub" x="200" y="386" text-anchor="middle">Bar oder PayPal</text>
+          </g>
+
+          <!-- NODES KASSE SIDE -->
+          <g class="node" data-detail="kasse">
+            <rect class="node-bg" x="500" y="100" width="200" height="60" rx="10" fill="#1d242c" stroke="#d4a14a"/>
+            <text class="node-label" x="600" y="124" text-anchor="middle">Kasse</text>
+            <text class="node-sub" x="600" y="142" text-anchor="middle">Bar + PayPal = Gesamt</text>
+            <text class="node-sub" x="600" y="156" text-anchor="middle" font-size="9">live summiert</text>
+          </g>
+
+          <g class="node" data-detail="einkauf">
+            <rect class="node-bg" x="500" y="220" width="200" height="60" rx="10" fill="#1d242c" stroke="#d4a14a"/>
+            <text class="node-label" x="600" y="248" text-anchor="middle">Einkauf abrechnen</text>
+            <text class="node-sub" x="600" y="266" text-anchor="middle">Getränkemarkt etc.</text>
+          </g>
+
+          <g class="node" data-detail="umbuchen">
+            <rect class="node-bg" x="500" y="340" width="200" height="60" rx="10" fill="#1d242c" stroke="#d4a14a"/>
+            <text class="node-label" x="600" y="368" text-anchor="middle">PayPal ↔ Bar umbuchen</text>
+            <text class="node-sub" x="600" y="386" text-anchor="middle">Aufteilung verschieben</text>
+          </g>
+
+          <!-- EDGES -->
+          <!-- Buchung -> Mitglied (zieht Guthaben ab) -->
+          <path class="edge" d="M 200 220 L 200 160" stroke="#4a9fd4" marker-end="url(#arrow-m)" data-detail="edge-buchung-mitglied"/>
+          <text class="edge-label" x="210" y="195">reduziert</text>
+
+          <!-- Aufladung -> Mitglied (erhöht Guthaben) -->
+          <path class="edge" d="M 180 340 C 180 280, 180 250, 180 160" stroke="#4a9fd4" marker-end="url(#arrow-m)" data-detail="edge-aufladung-mitglied"/>
+          <text class="edge-label" x="120" y="260">+ Guthaben</text>
+
+          <!-- Aufladung -> Kasse (KOPPLUNG) -->
+          <path class="edge" d="M 300 365 L 500 130" stroke="url(#grad-coupling)" marker-end="url(#arrow-k)" data-detail="edge-kopplung" stroke-dasharray="0"/>
+          <defs>
+            <linearGradient id="grad-coupling" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#4a9fd4"/>
+              <stop offset="100%" stop-color="#d4a14a"/>
+            </linearGradient>
+          </defs>
+          <text class="edge-label" x="380" y="240" fill="#d4a14a" font-weight="700">+ Bar oder + PayPal</text>
+          <text class="edge-label" x="380" y="255" fill="#b8c2cc">(gekoppelte Buchung!)</text>
+
+          <!-- Einkauf -> Kasse (zieht Geld ab) -->
+          <path class="edge" d="M 600 220 L 600 160" stroke="#d4a14a" marker-end="url(#arrow-k)" data-detail="edge-einkauf-kasse"/>
+          <text class="edge-label" x="610" y="195">reduziert</text>
+
+          <!-- Umbuchen (selbstreferenziell) -->
+          <path class="edge" d="M 700 370 C 760 370, 760 130, 700 130" stroke="#d4a14a" marker-end="url(#arrow-k)" data-detail="edge-umbuchen" stroke-dasharray="6 4"/>
+          <text class="edge-label" x="720" y="250">verschiebt</text>
+
+          <!-- WICHTIGE TRENNUNG: Buchen geht NICHT zur Kasse -->
+          <g data-detail="trennung" style="cursor:pointer">
+            <path class="edge" d="M 305 250 L 495 250" stroke="#c8102e" stroke-dasharray="3 3" stroke-width="1.5" opacity="0.6"/>
+            <text class="edge-label" x="400" y="244" text-anchor="middle" fill="#c8102e" font-weight="600">KEIN Geldfluss bei Buchung</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="flow-detail empty" id="flow-detail">
+        Tippe einen Knoten oder Pfeil an, um zu sehen, was dort passiert.
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNKTIONEN -->
+  <section>
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2>Was die App kann</h2>
+    </div>
+    <p class="section-intro">Aufklappen zum Erkunden. Drei Bereiche, je nach Rolle.</p>
+
+    <div class="accordion">
+
+      <div class="acc-item">
+        <div class="acc-head">
+          <div class="acc-icon mitglied">M</div>
+          <div style="flex:1">
+            <div class="acc-title">Mitglied</div>
+            <div class="acc-sub">Für alle ~30 Personen — Standard-Ansicht</div>
+          </div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="acc-content">
+            <ul>
+              <li><strong>Login per Magic-Link</strong> — beim ersten Mal kommt eine Email mit Einladungs-Link, danach reicht Email + Passwort</li>
+              <li><strong>Guthaben sehen</strong> — auf der Theke, groß und zentral, rot wenn negativ</li>
+              <li><strong>Getränk buchen</strong> — Tap auf Kachel, Bestätigung, fertig. Buchung 5 Min lang stornierbar</li>
+              <li><strong>Aufladen per PayPal</strong> — Betrag wählen, PayPal öffnet sich, Verwalter bestätigt</li>
+              <li><strong>Aufladen per Bargeld</strong> — wird vom Verwalter eingetragen, Mitglied sieht es im Verlauf</li>
+              <li><strong>Eigenes Trinkjournal</strong> — privat, mit Achievements (Erstbesteigung, Hüttenabend, Trockenwoche...) und 30-Tage-Verlauf</li>
+              <li><strong>Negatives Guthaben erlaubt</strong> — kein Hard-Stop, nur visueller Hinweis. Soziale Kontrolle reicht.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <div class="acc-head">
+          <div class="acc-icon verwalter">V</div>
+          <div style="flex:1">
+            <div class="acc-title">Verwalter</div>
+            <div class="acc-sub">Laura — pflegt Mitglieder, Katalog, Anfragen</div>
+          </div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="acc-content">
+            <ul>
+              <li><strong>Mitglieder einladen</strong> — Email rein, Magic-Link raus, Person setzt eigenes Passwort</li>
+              <li><strong>Bargeld-Aufladungen eintragen</strong> — manuell für ein Mitglied, mit Pflicht-Notiz</li>
+              <li><strong>PayPal-Anfragen bestätigen/ablehnen</strong> — sobald Geld eingegangen ist</li>
+              <li><strong>Getränke-Katalog pflegen</strong> — anlegen, Preis ändern, deaktivieren (nie löschen)</li>
+              <li><strong>Guthaben korrigieren</strong> — falls jemand sich vertippt hat, mit Pflicht-Notiz</li>
+              <li><strong>Transaktionen stornieren</strong> — jederzeit jede Buchung rückgängig, mit Pflicht-Notiz</li>
+              <li><strong>Mitglieder-Übersicht</strong> — alle Salden auf einen Blick, Schulden rot markiert</li>
+              <li><strong>Sortenstatistik</strong> — anonym aggregiert, „wie viele Helles diesen Monat?" — für die Einkaufsplanung</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <div class="acc-head">
+          <div class="acc-icon kasse">K</div>
+          <div style="flex:1">
+            <div class="acc-title">Kasse</div>
+            <div class="acc-sub">Eigenes Konto der Vereinskasse — Bar und PayPal getrennt</div>
+          </div>
+          <span class="acc-chevron">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="acc-content">
+            <ul>
+              <li><strong>Bar-Bestand + PayPal-Bestand</strong> — getrennt geführt, Summe = Gesamtbestand</li>
+              <li><strong>Deckungs-Kennzahl</strong> — Gesamtbestand minus Summe aller Mitglieder-Guthaben. Positiv = Puffer. Negativ = Warnung.</li>
+              <li><strong>Einkauf abrechnen</strong> — Verwalter trägt ein, wenn Getränke nachgekauft wurden. Konto wählen (womit bezahlt?), Notiz dabei</li>
+              <li><strong>Umbuchen</strong> — wenn vom PayPal-Konto Geld in die Bar-Kasse wandert (oder umgekehrt), wird das digital abgebildet</li>
+              <li><strong>App ist die Wahrheit</strong> — kein Ist/Soll-Kassensturz. Der Verwalter sorgt dafür, dass das angezeigte PayPal-Guthaben real verfügbar ist</li>
+              <li><strong>Kassen-Historie</strong> — vollständiger Audit-Trail, nichts wird gelöscht</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- IDEENPOOL -->
+  <section>
+    <div class="section-head">
+      <span class="section-num">03</span>
+      <h2>Ideenpool — was später kommen könnte</h2>
+    </div>
+    <p class="section-intro">Sammlung von Erweiterungen jenseits des MVP. <strong style="color: var(--text-bright);">Nichts davon ist beschlossen</strong> — das hier ist der Spielraum für später, sortiert nach Themen. Aufwand grob geschätzt.</p>
+
+    <div class="pool-tabs">
+      <button class="pool-tab active" data-pool="belohnung">Belohnung & Bindung</button>
+      <button class="pool-tab" data-pool="games">Mini-Games</button>
+      <button class="pool-tab" data-pool="lernen">Lern-Challenges</button>
+      <button class="pool-tab" data-pool="sonst">Sonstiges</button>
+    </div>
+
+    <div class="pool-panel active" data-panel="belohnung">
+      <div class="pool-grid">
+        <div class="idea-card">
+          <span class="symbol">🎫</span>
+          <h3>Stempelkarte</h3>
+          <p>Nach 10 gebuchten Getränken gibt's das nächste auf die Kasse. Sichtbar als kleine Karte mit Stempel-Reihe im Profil.</p>
+          <span class="idea-effort small">Aufwand: klein</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🏅</span>
+          <h3>Monats-Hüttengeist</h3>
+          <p>Wer im Monat als Erste:r eine bestimmte Achievement holt, bekommt einen Mini-Bonus (ein Getränk frei). Niemals Ranglisten, nur Erste:r-erreicht-Logik.</p>
+          <span class="idea-effort small">Aufwand: klein</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🎂</span>
+          <h3>Geburtstags-Getränk</h3>
+          <p>Am Geburtstag gibt's automatisch ein Getränk auf die Kasse. Geburtsdatum wird beim Einladen optional erfasst.</p>
+          <span class="idea-effort small">Aufwand: klein</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🧗</span>
+          <h3>Seilschafts-Bonus</h3>
+          <p>„Eine Runde aufs Haus" — Mitglied bezahlt für mehrere Personen gleichzeitig, dafür gibt's einen kleinen Discount auf die eigene Runde.</p>
+          <span class="idea-effort medium">Aufwand: mittel</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">📅</span>
+          <h3>Einsatz-Bonus</h3>
+          <p>Nach jedem Einsatz: ein Freigetränk. Kopplung an euer Einsatzboard wäre denkbar (Schwesterprojekt).</p>
+          <span class="idea-effort large">Aufwand: groß (zwei Apps)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pool-panel" data-panel="games">
+      <div class="pool-grid">
+        <div class="idea-card">
+          <span class="symbol">🎰</span>
+          <h3>Würfel-Spende</h3>
+          <p>Einmal pro Tag: würfeln. Bei einer 6 ist das nächste Getränk auf die Kasse. Bei einer 1 spendest du 50 Cent in die Vereinskasse. Spielerei mit Augenzwinkern.</p>
+          <span class="idea-effort small">Aufwand: klein</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🎯</span>
+          <h3>Schätz-Spiel</h3>
+          <p>„Wie viele Helles wurden diese Woche gebucht?" — wer am dichtesten dran ist, bekommt ein Freigetränk.</p>
+          <span class="idea-effort medium">Aufwand: mittel</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🎲</span>
+          <h3>Glücksrad</h3>
+          <p>Einmal pro Woche drehen — Felder mit „−10 Cent Rabatt", „Frei-Getränk", „Pech, nochmal", „Doppelter Eintrag". Begrenzt, damit kein Glücksspiel-Charakter entsteht.</p>
+          <span class="idea-effort medium">Aufwand: mittel</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🤝</span>
+          <h3>Trink-Duell</h3>
+          <p>Zwei Mitglieder verabreden eine Wette: „Wer bis Monatsende mehr Touren mitgegangen ist, bezahlt dem anderen ein Getränk." Manuell-getriggert, nur Tracking-Hilfe.</p>
+          <span class="idea-effort medium">Aufwand: mittel</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pool-panel" data-panel="lernen">
+      <div class="pool-grid">
+        <div class="idea-card">
+          <span class="symbol">📚</span>
+          <h3>Theorie-Quiz</h3>
+          <p>Fragen-Pool zu eurer Ausbildung — Wundversorgung, Lawinenkunde, Funkverkehr. Wer dreimal in Folge alle richtig hat, bekommt ein Freigetränk. Lernen mit Anreiz.</p>
+          <span class="idea-effort large">Aufwand: groß (Fragen-Katalog!)</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">⏱️</span>
+          <h3>Standplatz unter 2 Min</h3>
+          <p>Praktische Challenge — Standplatz im Übungsgelände in unter 2 Min aufgebaut? Verwalter bestätigt manuell, Mitglied bekommt einen Eintrag „Challenge bestanden" + Freigetränk.</p>
+          <span class="idea-effort small">Aufwand: klein (manueller Vermerk)</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🎒</span>
+          <h3>STU-Vollständigkeit</h3>
+          <p>STU-Check bei Übungsbeginn — alle Items dabei? Verwalter hakt ab, dreimal in Folge vollständig = Freigetränk.</p>
+          <span class="idea-effort small">Aufwand: klein</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🧗‍♀️</span>
+          <h3>Knotenkunde</h3>
+          <p>Foto eines geknüpften Knotens hochladen, Verwalter sichtet, gibt Freigetränk frei. Kann mit anderen praktischen Aufgaben kombiniert werden.</p>
+          <span class="idea-effort medium">Aufwand: mittel (Foto-Upload)</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">📖</span>
+          <h3>Lern-Streak</h3>
+          <p>Wer 7 Tage in Folge im Quiz aktiv ist, bekommt eine Achievement „Lern-Seilschaft". Sichtbar im Profil.</p>
+          <span class="idea-effort small">Aufwand: klein</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pool-panel" data-panel="sonst">
+      <div class="pool-grid">
+        <div class="idea-card">
+          <span class="symbol">📱</span>
+          <h3>PWA / Home-Screen-Icon</h3>
+          <p>App lässt sich aufs iPhone/Android als Icon installieren, sieht aus wie native App. Schon in der Roadmap (Phase B6).</p>
+          <span class="idea-effort small">Aufwand: klein (geplant)</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🌙</span>
+          <h3>Bar-Modus</h3>
+          <p>Großer Touchscreen-Modus für ein Tablet an der Bar — Avatar antippen, Getränk wählen, fertig. Kein Einzel-Login nötig.</p>
+          <span class="idea-effort large">Aufwand: groß</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🗓️</span>
+          <h3>Monats-Newsletter</h3>
+          <p>Automatischer Email-Versand am Monatsende: „Dein Verbrauch im Monat, deine Achievements, dein Stand." Persönlich, freundlich.</p>
+          <span class="idea-effort medium">Aufwand: mittel</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">📊</span>
+          <h3>Jahres-Bilanz</h3>
+          <p>Pro Jahr eine Statistik fürs Mitglied (Spotify-Wrapped-Style): „Du hast 134 Getränke gebucht, dein Favorit war Cola, deine längste Pause war 22 Tage." Nur privat, nicht öffentlich.</p>
+          <span class="idea-effort medium">Aufwand: mittel</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🤖</span>
+          <h3>Bestell-Vorhersage</h3>
+          <p>Auf Basis der bisherigen Sortenstatistik schätzt die App, was im nächsten Monat eingekauft werden sollte. Hilft Laura bei der Bestellung.</p>
+          <span class="idea-effort medium">Aufwand: mittel</span>
+        </div>
+        <div class="idea-card">
+          <span class="symbol">🎄</span>
+          <h3>Saison-Drinks</h3>
+          <p>Im Winter automatisch „Glühwein" und „Heißer Apfelsaft" im Katalog, im Sommer wieder weg. Zeit-gesteuert.</p>
+          <span class="idea-effort small">Aufwand: klein</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section>
+    <div class="section-head">
+      <span class="section-num">04</span>
+      <h2>Wo wir gerade stehen</h2>
+    </div>
+    <p class="section-intro">Phase 1 ist gebaut und durchgetestet. Die nächsten Schritte sind in Sub-Phasen zerlegt, damit jede Etappe sauber überschaubar bleibt.</p>
+
+    <div class="roadmap">
+      <div class="phase-row done"><span class="phase-id">B1</span><span class="phase-title">Grundgerüst (Login, Magic-Link, Datenbank)</span><span class="phase-status">✓ Fertig</span></div>
+      <div class="phase-row current"><span class="phase-id">B2a</span><span class="phase-title">Mitglieder einladen (Admin-UI)</span><span class="phase-status">► Als Nächstes</span></div>
+      <div class="phase-row"><span class="phase-id">B2b</span><span class="phase-title">Getränke-Katalog pflegen</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B2c</span><span class="phase-title">Getränke buchen + Guthaben live</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B2d</span><span class="phase-title">Storno-Fenster</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B2e</span><span class="phase-title">Bargeld-Aufladung (Admin)</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B2f</span><span class="phase-title">PayPal-Aufladungs-Anfragen</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B2g</span><span class="phase-title">Mitglieder-Übersicht + Korrektur</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B2i</span><span class="phase-title">Kassen-Screen (Bar/PayPal/Deckung)</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B3</span><span class="phase-title">Sortenstatistik (Einkaufsplanung)</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B4</span><span class="phase-title">Trinkjournal + Achievements</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B5</span><span class="phase-title">Design-Politur</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B6</span><span class="phase-title">PWA-Installation</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B7</span><span class="phase-title">DSGVO + Datenschutz</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B8</span><span class="phase-title">Deploy auf Server + Testphase</span><span class="phase-status">offen</span></div>
+      <div class="phase-row"><span class="phase-id">B9</span><span class="phase-title">Go-Live</span><span class="phase-status">offen</span></div>
+    </div>
+  </section>
+
+  <footer>
+    Bergwacht Zollernalb · Getränkekasse · interne Übersicht · Stand 26.05.2026
+  </footer>
+
+</div>
+
+<script>
+  // === Geldfluss-Detail-Boxen ===
+  const FLOW_DETAILS = {
+    'member': {
+      title: 'Mitglieder-Konto',
+      html: 'Jedes Mitglied hat ein <strong>persönliches Guthaben</strong>. Wird live aus allen Transaktionen summiert — nie als Feld gespeichert. So kann es nie inkonsistent werden.<br><br>Beispiel: <code>+10€ PayPal</code> + <code>-1,50€ Helles</code> + <code>-1,20€ Cola</code> = <code>+7,30€</code> aktueller Stand.'
+    },
+    'buchung': {
+      title: 'Getränk buchen',
+      html: 'Mitglied wählt aus dem Katalog, bestätigt, Guthaben wird sofort reduziert. <strong>Innerhalb von 5 Minuten</strong> kann das Mitglied selbst stornieren, danach nur noch der Verwalter (mit Pflicht-Notiz).<br><br>Wichtig: <strong>auf der Kassen-Ebene passiert NICHTS</strong>. Das Geld war ja schon eingezahlt.'
+    },
+    'aufladen-m': {
+      title: 'Aufladung — Mitglieder-Sicht',
+      html: '<strong>PayPal:</strong> Mitglied wählt Betrag, App öffnet paypal.me-Link, parallel entsteht eine Aufladungs-Anfrage. Verwalter bestätigt manuell, sobald das Geld eingegangen ist.<br><br><strong>Bargeld:</strong> Verwalter trägt direkt im System ein, mit Notiz "Bar aufgeladen". Mitglied sieht den Eintrag im Verlauf.'
+    },
+    'kasse': {
+      title: 'Kasse',
+      html: 'Die Kasse führt ihr eigenes Geld, <strong>getrennt nach Bar- und PayPal-Bestand</strong>. Beide Werte werden live summiert. Summe = Gesamtbestand.<br><br>Die wichtigste Kennzahl ist die <strong>Deckung</strong>: Gesamtbestand minus Summe aller Mitglieder-Guthaben. Positiv = die Kasse hat Puffer. Negativ = die Kasse schuldet mehr, als sie hat (Warnsignal).'
+    },
+    'einkauf': {
+      title: 'Einkauf abrechnen',
+      html: 'Verwalter trägt ein, wenn neue Getränke gekauft wurden: <strong>Betrag, Konto-Wahl (Bar oder PayPal — womit wurde bezahlt?), Pflicht-Notiz</strong> (z.B. "Getränkemarkt 24.05.").<br><br>Senkt den Gesamtbestand der Kasse. <strong>Mitglieder-Guthaben bleibt unberührt</strong> — Einkäufe sind eine Sache der Vereinskasse.'
+    },
+    'umbuchen': {
+      title: 'Umbuchen PayPal ↔ Bar',
+      html: 'Wenn Laura PayPal-Geld abhebt und in die Bar-Kasse legt (oder umgekehrt), bildet die App das digital ab. <strong>Zwei verknüpfte Buchungen</strong>: −X auf PayPal, +X auf Bar.<br><br>Der <strong>Gesamtbestand bleibt gleich</strong>, nur die Aufteilung verschiebt sich. Wichtig, damit das digitale PayPal-Konto nicht endlos wächst.'
+    },
+    'edge-buchung-mitglied': {
+      title: 'Pfeil: Buchung → Mitglied',
+      html: 'Eine Buchung erzeugt eine <strong>Transaktion auf der Mitglieder-Ebene</strong> mit negativem Betrag (= Preis des Getränks). Reduziert das Guthaben des Mitglieds sofort sichtbar.'
+    },
+    'edge-aufladung-mitglied': {
+      title: 'Pfeil: Aufladung → Mitglied',
+      html: 'Eine Aufladung erzeugt eine <strong>positive Transaktion</strong> auf der Mitglieder-Ebene. Guthaben steigt um den eingezahlten Betrag.'
+    },
+    'edge-kopplung': {
+      title: 'Pfeil: gekoppelte Kassen-Einzahlung',
+      html: 'Das ist die <strong>wichtigste Verknüpfung</strong> zwischen beiden Ebenen: jede Aufladung erzeugt IMMER zwei Buchungen in einer einzigen Aktion.<br><br>• Mitglieder-Ebene: <code>+X € Guthaben</code><br>• Kassen-Ebene: <code>+X € Bar</code> (oder PayPal, je nach Zahlweg)<br><br>So bleibt die Buchhaltung konsistent — was reinkommt, taucht auf beiden Konten auf.'
+    },
+    'edge-einkauf-kasse': {
+      title: 'Pfeil: Einkauf → Kasse',
+      html: 'Ein Einkauf erzeugt eine <strong>negative Buchung auf der Kassen-Ebene</strong>. Bar oder PayPal sinkt, je nachdem womit bezahlt wurde.<br><br>Mitglieder-Ebene ist davon NICHT betroffen.'
+    },
+    'edge-umbuchen': {
+      title: 'Pfeil: Umbuchen (Selbstbezug)',
+      html: 'Verschiebt Geld zwischen den zwei Unterkonten Bar und PayPal. <strong>Zwei verknüpfte Zeilen</strong>: minus auf dem einen, plus auf dem anderen. Gesamtbestand bleibt gleich.'
+    },
+    'trennung': {
+      title: 'Wichtige Trennung: Buchen ≠ Kassenfluss',
+      html: 'Eine ganz zentrale Entscheidung: Wenn ein Mitglied ein Getränk bucht, <strong>passiert auf der Kassen-Ebene NICHTS</strong>.<br><br>Warum? Das Geld war ja schon da, als das Mitglied aufgeladen hat. Die Buchung reduziert nur die <em>Verbindlichkeit</em> der Kasse gegenüber dem Mitglied — physisches Geld wandert nicht.'
+    }
+  };
+
+  const detailBox = document.getElementById('flow-detail');
+  document.querySelectorAll('.node, .edge, [data-detail]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const key = el.getAttribute('data-detail');
+      if (!key || !FLOW_DETAILS[key]) return;
+      const d = FLOW_DETAILS[key];
+      detailBox.classList.remove('empty');
+      detailBox.innerHTML = `<div class="flow-detail-title">${d.title}</div><div class="flow-detail-text">${d.html}</div>`;
+    });
+  });
+
+  // === Akkordeon ===
+  document.querySelectorAll('.acc-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const item = head.parentElement;
+      item.classList.toggle('open');
+    });
+  });
+
+  // Erstes Akkordeon offen
+  document.querySelector('.acc-item').classList.add('open');
+
+  // === Ideenpool-Tabs ===
+  document.querySelectorAll('.pool-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.getAttribute('data-pool');
+      document.querySelectorAll('.pool-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.pool-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelector(`.pool-panel[data-panel="${target}"]`).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
